@@ -1,0 +1,42 @@
+import streamlit as st
+from youtube_transcript_api import YouTubeTranscriptApi
+import g4f
+
+st.set_page_config(page_title="Resumo de Vídeo do YouTube", layout="centered")
+
+st.title("📺 Resumo de Vídeo do YouTube")
+st.markdown("Cole a URL de um vídeo do YouTube para gerar um **resumo em tópicos** com IA.")
+
+# Função para extrair ID do vídeo
+def get_video_id(url_yt): 
+    return url_yt.split("watch?v=")[-1]
+
+# Função para perguntar ao GPT
+def ask_gpt(messages: list) -> str:
+    response = g4f.ChatCompletion.create(
+        model=g4f.models.gpt_4o,
+        messages=messages
+    )
+    return response
+
+# Interface
+url = st.text_input("🔗 Cole aqui a URL do vídeo do YouTube")
+
+if st.button("🚀 Gerar Resumo") and url:
+    try:
+        st.info("🔄 Processando...")
+        video_id = get_video_id(url)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'pt', 'es'])
+        transcript_joined = " ".join([line['text'] for line in transcript])
+
+        messages = [
+            {"role": "user", "content": f"Resuma em tópicos essa transcrição do vídeo do YouTube na linguagem que estiver escrita:\n\n{transcript_joined}"}
+        ]
+
+        resposta = ask_gpt(messages)
+        st.success("📋 Resumo gerado com sucesso!")
+        st.markdown(f"### 🔹 Resumo:")
+        st.markdown(resposta)
+
+    except Exception as e:
+        st.error(f"❌ Erro: {str(e)}")
